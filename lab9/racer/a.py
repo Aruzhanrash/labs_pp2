@@ -1,147 +1,157 @@
-import pygame
-import random
+import pygame, sys, random, time
+from pygame.locals import *
 
-# Определение цветов
-WHITE = (255, 255, 255)
-ERASER_COLOR = (0, 0, 0)  # Цвет для "ластика" (черный)
-GREEN = (34, 139, 34)
-BLUE = (0, 0, 255)
-RED = (255, 0, 0)
-YELLOW = (255, 255, 0)
+pygame.init()
 
-pygame.display.set_caption("Paint")  # Заголовок окна
+# Настройка FPS (кадров в секунду)
+FPS = 60
+clock = pygame.time.Clock()
 
-drawings = []  # Список для хранения фигур и линий
-current_shape = None
-current_color = WHITE
-shape_size = 80
+# Цвета
+COLOR_BLUE  = (0, 0, 255)
+COLOR_RED   = (255, 0, 0)
+COLOR_GREEN = (0, 255, 0)
+COLOR_BLACK = (0, 0, 0)
+COLOR_WHITE = (255, 255, 255)
 
+# Размеры экрана
+SCREEN_WIDTH = 405
+SCREEN_HEIGHT = 600
 
-def run_paint_app():
-    global current_shape, current_color
-    pygame.init()
-    canvas = pygame.display.set_mode((640, 480))
-    frame_rate = pygame.time.Clock()
+def game_over_screen():
+    game_window.fill(COLOR_RED)
+    game_over_text = font_large.render("Game Over", True, COLOR_BLACK)
+    restart_text = font_small.render("Press R to Restart", True, COLOR_BLACK)
+    game_window.blit(game_over_text, (50, 250))
+    game_window.blit(restart_text, (100, 350))
+    pygame.display.update()
     
-    font = pygame.font.Font(None, 20)
-    instructions = [
-        "Клавиши управления:",
-        "R - Красный", "G - Зеленый", "B - Синий", "Y - Желтый", "X - Случайный цвет", 
-        "W - Прямоугольник", "C - Круг", "S - Квадрат", "T - Прямоугольный треугольник",
-        "E - Равносторонний треугольник", "D - Ромб",
-        "Backspace - Ластик"
-    ]
-    
-    drawing = False
-    start_pos = None
-    
-    while True:
-        canvas.fill((0, 0, 0))  # Очистка экрана
-        
-        # Отображение инструкций
-        y_offset = 5
-        for line in instructions:
-            text_surface = font.render(line, True, WHITE)
-            canvas.blit(text_surface, (5, y_offset))
-            y_offset += 15
-        
-        # Перерисовка всех сохранённых элементов
-        for draw in drawings:
-            draw()
-        
+    waiting = True
+    while waiting:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
-                return
-            
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:
-                    current_color = RED
-                elif event.key == pygame.K_g:
-                    current_color = GREEN
-                elif event.key == pygame.K_b:
-                    current_color = BLUE
-                elif event.key == pygame.K_y:
-                    current_color = YELLOW
-                elif event.key == pygame.K_x:
-                    current_color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-                elif event.key == pygame.K_w:
-                    current_shape = "rectangle"
-                elif event.key == pygame.K_c:
-                    current_shape = "circle"
-                elif event.key == pygame.K_s:
-                    current_shape = "square"
-                elif event.key == pygame.K_t:
-                    current_shape = "right_triangle"
-                elif event.key == pygame.K_e:
-                    current_shape = "equilateral_triangle"
-                elif event.key == pygame.K_d:
-                    current_shape = "rhombus"
-                elif event.key == pygame.K_BACKSPACE:
-                    current_color = ERASER_COLOR
-            
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                drawing = True
-                start_pos = pygame.mouse.get_pos()
-            
-            if event.type == pygame.MOUSEBUTTONUP and drawing:
-                end_pos = pygame.mouse.get_pos()
-                if current_shape == "rectangle":
-                    drawings.append(lambda start=start_pos, end=end_pos, color=current_color: draw_rectangle(canvas, start, end, color))
-                elif current_shape == "circle":
-                    drawings.append(lambda start=start_pos, end=end_pos, color=current_color: draw_circle(canvas, start, end, color))
-                elif current_shape == "square":
-                    drawings.append(lambda start=start_pos, end=end_pos, color=current_color: draw_square(canvas, start, end, color))
-                elif current_shape == "right_triangle":
-                    drawings.append(lambda start=start_pos, end=end_pos, color=current_color: draw_right_triangle(canvas, start, end, color))
-                elif current_shape == "equilateral_triangle":
-                    drawings.append(lambda start=start_pos, end=end_pos, color=current_color: draw_equilateral_triangle(canvas, start, end, color))
-                elif current_shape == "rhombus":
-                    drawings.append(lambda start=start_pos, end=end_pos, color=current_color: draw_rhombus(canvas, start, end, color))
-                drawing = False
-                start_pos = None
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == KEYDOWN and event.key == K_r:
+                waiting = False  # Перезапуск игры
+                main_game()
+
+def main_game():
+    global player_score, collected_coins, enemy_speed
+    player_score = 0
+    collected_coins = 0
+    enemy_speed = 5
+    
+    # Загрузка изображений
+    bg_image = pygame.image.load("lab8/racer/image/AnimatedStreet.png")
+    player_car_image = pygame.image.load("lab8/racer/image/Player.png")
+    enemy_car_image = pygame.image.load("lab8/racer/image/Enemy.png")
+    coin_image = pygame.image.load("lab8/racer/image/coin.png")
+    
+    # Классы
+    class PlayerCar(pygame.sprite.Sprite):
+        def __init__(self):
+            super().__init__()
+            self.image = player_car_image
+            self.rect = self.image.get_rect()
+            self.rect.center = (160, 520)
         
-        pygame.display.flip()
-        frame_rate.tick(60)
+        def move(self):
+            pressed_keys = pygame.key.get_pressed()
+            if pressed_keys[K_LEFT] and self.rect.left > 0:
+                self.rect.move_ip(-5, 0)
+            if pressed_keys[K_RIGHT] and self.rect.right < SCREEN_WIDTH:
+                self.rect.move_ip(5, 0)
+            if pressed_keys[K_UP] and self.rect.top > 0:
+                self.rect.move_ip(0, -5)
+            if pressed_keys[K_DOWN] and self.rect.bottom < SCREEN_HEIGHT:
+                self.rect.move_ip(0, 5)
 
-# Функции для рисования фигур
+    class EnemyCar(pygame.sprite.Sprite):
+        def __init__(self):
+            super().__init__()
+            self.image = enemy_car_image
+            self.rect = self.image.get_rect()
+            self.rect.center = (random.randint(40, SCREEN_WIDTH-40), 0)
+        
+        def move(self):
+            global player_score
+            self.rect.move_ip(0, enemy_speed)
+            if self.rect.top > SCREEN_HEIGHT:
+                player_score += 1
+                self.rect.top = 0
+                self.rect.center = (random.randint(40, SCREEN_WIDTH - 40), 0)
+    
+    class GoldCoin(pygame.sprite.Sprite):
+        def __init__(self):
+            super().__init__()
+            self.image = pygame.transform.scale(coin_image, (30, 30))
+            self.rect = self.image.get_rect()
+            self.rect.center = (random.randint(40, SCREEN_WIDTH-40), 0)
+            self.weight = random.randint(1, 5)
+        
+        def move(self):
+            self.rect.move_ip(0, enemy_speed)
+            if self.rect.top > SCREEN_HEIGHT:
+                self.rect.top = 0
+                self.rect.center = (random.randint(40, SCREEN_WIDTH - 40), 0)
+    
+    # Создание объектов
+    player = PlayerCar()
+    enemy = EnemyCar()
+    coin = GoldCoin()
+    
+    enemy_group = pygame.sprite.Group()
+    enemy_group.add(enemy)
+    
+    coin_group = pygame.sprite.Group()
+    coin_group.add(coin)
+    
+    all_sprites = pygame.sprite.Group()
+    all_sprites.add(player, enemy, coin)
+    
+    # Игровой цикл
+    while True:
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+        
+        game_window.blit(bg_image, (0, 0))
+        
+        score_display = font_small.render(f"Score: {player_score}", True, COLOR_BLACK)
+        coins_display = font_small.render(f"Coins: {collected_coins}", True, COLOR_BLACK)
+        game_window.blit(score_display, (10, 10))
+        game_window.blit(coins_display, (280, 10))
+        
+        for sprite in all_sprites:
+            game_window.blit(sprite.image, sprite.rect)
+            sprite.move()
+        
+        # Проверка столкновения игрока с врагом
+        if pygame.sprite.spritecollideany(player, enemy_group):
+            pygame.mixer.Sound('crash.wav').play()
+            time.sleep(0.5)
+            game_over_screen()
+        
+        # Проверка столкновения игрока с монетой
+        collected = pygame.sprite.spritecollideany(player, coin_group)
+        if collected:
+            collected_coins += collected.weight
+            enemy_speed += 0.1* collected.weight
+            collected.kill()
+            
+        if len(coin_group) == 0:
+            new_coin = GoldCoin()
+            coin_group.add(new_coin)
+            all_sprites.add(new_coin)
+        
+        pygame.display.update()
+        clock.tick(FPS)
 
-def draw_rectangle(canvas, start, end, color):
-    x1, y1 = start
-    x2, y2 = end
-    pygame.draw.rect(canvas, color, (x1, y1, x2 - x1, y2 - y1), 3)
-
-def draw_circle(canvas, start, end, color):
-    x1, y1 = start
-    x2, y2 = end
-    radius = max(abs(x2 - x1), abs(y2 - y1)) // 2
-    center = ((x1 + x2) // 2, (y1 + y2) // 2)
-    pygame.draw.circle(canvas, color, center, radius, 3)
-
-def draw_square(canvas, start, end, color):
-    x1, y1 = start
-    x2, y2 = end
-    size = min(abs(x2 - x1), abs(y2 - y1))
-    pygame.draw.rect(canvas, color, (x1, y1, size, size), 3)
-
-def draw_right_triangle(canvas, start, end, color):
-    x1, y1 = start
-    x2, y2 = end
-    points = [(x1, y1), (x2, y1), (x1, y2)]
-    pygame.draw.polygon(canvas, color, points, 3)
-
-def draw_equilateral_triangle(canvas, start, end, color):
-    x1, y1 = start
-    x2, y2 = end
-    size = min(abs(x2 - x1), abs(y2 - y1))
-    height = (size * (3 ** 0.5)) / 2
-    points = [(x1, y2), (x2, y2), (x1 + size // 2, y2 - height)]
-    pygame.draw.polygon(canvas, color, points, 3)
-
-def draw_rhombus(canvas, start, end, color):
-    x1, y1 = start
-    x2, y2 = end
-    size = min(abs(x2 - x1), abs(y2 - y1))
-    points = [(x1, y1 - size // 2), (x1 + size // 2, y1), (x1, y1 + size // 2), (x1 - size // 2, y1)]
-    pygame.draw.polygon(canvas, color, points, 3)
-
-run_paint_app()
+# Запуск игры
+font_large = pygame.font.SysFont("Verdana", 60)
+font_small = pygame.font.SysFont("Verdana", 20)
+game_window = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Race")
+main_game()
