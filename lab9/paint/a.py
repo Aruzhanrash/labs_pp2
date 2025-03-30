@@ -26,10 +26,9 @@ def run_paint_app():
     font = pygame.font.Font(None, 20)
     instructions = [
         "Клавиши управления:",
+        "R - Красный", "G - Зеленый", "B - Синий", "Y - Желтый", "X - Случайный цвет", 
         "W - Прямоугольник", "C - Круг", "S - Квадрат", "T - Прямоугольный треугольник",
         "E - Равносторонний треугольник", "D - Ромб",
-        "Стрелки вверх/вниз - Изменение размера фигуры",
-        "Стрелки влево/вправо - Изменение размера кисти",
         "Backspace - Ластик"
     ]
     
@@ -53,7 +52,17 @@ def run_paint_app():
             
             if event.type == pygame.KEYDOWN:
                 pos = pygame.mouse.get_pos()
-                if event.key == pygame.K_w:
+                if event.key == pygame.K_r:
+                    current_color = RED
+                elif event.key == pygame.K_g:
+                    current_color = GREEN
+                elif event.key == pygame.K_b:
+                    current_color = BLUE
+                elif event.key == pygame.K_y:
+                    current_color = YELLOW
+                elif event.key == pygame.K_x:
+                    current_color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+                elif event.key == pygame.K_w:
                     drawings.append(lambda pos=pos, size=shape_size, color=current_color: draw_rectangle(canvas, pos, size, color))
                 elif event.key == pygame.K_c:
                     drawings.append(lambda pos=pos, size=shape_size, color=current_color: draw_circle(canvas, pos, size, color))
